@@ -1,0 +1,512 @@
+<html>
+<head>
+<style>
+
+
+.pace {
+    -webkit-pointer-events: none;
+    pointer-events: none;
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+
+    z-index: 2000;
+    position: fixed;
+    height: 90px;
+    width: 90px;
+    margin: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.pace.pace-inactive .pace-activity {
+    display: none;
+}
+
+.pace .pace-activity {
+    position: fixed;
+    z-index: 2000;
+    display: block;
+    position: absolute;
+    left: -30px;
+    top: -30px;
+    height: 90px;
+    width: 90px;
+    display: block;
+    border-width: 30px;
+    border-style: double;
+    border-color: #29d transparent transparent;
+    border-radius: 50%;
+
+    -webkit-animation: spin 1s linear infinite;
+    -moz-animation: spin 1s linear infinite;
+    -o-animation: spin 1s linear infinite;
+    animation: spin 1s linear infinite;
+}
+
+.pace .pace-activity:before {
+    content: ' ';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    height: 50px;
+    width: 50px;
+    display: block;
+    border-width: 10px;
+    border-style: solid;
+    border-color: #29d transparent transparent;
+    border-radius: 50%;
+}
+
+@-webkit-keyframes spin {
+    100% { -webkit-transform: rotate(359deg); }
+}
+
+@-moz-keyframes spin {
+    100% { -moz-transform: rotate(359deg); }
+}
+
+@-o-keyframes spin {
+    100% { -moz-transform: rotate(359deg); }
+}
+
+@keyframes spin {
+    100% {  transform: rotate(359deg); }
+}
+
+
+body {
+    padding: 0;
+    margin: 0;
+}
+
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    background-color: lightgray;
+}
+nav > * {
+    margin: 5px;
+}
+nav #drop_zone {
+    flex-grow: 1;
+    display: block;
+    text-align: center;
+    border-radius: 10px;
+    border: 3px dashed;
+    padding: 5px;
+}
+
+svg {
+    margin:10px;
+    max-width: 100%;
+    height: auto;
+}
+
+#tooltip{
+    background:#FFCCAA;
+    width:auto;
+    height:auto;
+    border-radius:10px;
+    box-shadow: 1px 2px 5px rgba(0,0,0,0.1);
+    position: absolute;
+    z-index: 10000;
+    padding:10px;
+    display: none
+}
+
+#document {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    margin-top: 50px;
+    vertical-align: middle;
+    overflow:hidden;
+}
+
+#document svg {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+
+.BU-E-MAIL, .BU-NAME-VERSAND, .BU-ORT, .BU-PLZ, .BU-STRASSE {
+    fill:  yellow;
+    stroke:  yellow;
+}
+.CONFLICT {
+    fill: red;
+    stroke:  red;
+}
+
+.Fälligam {
+    fill: blue;
+    stroke:  blue;
+}
+.MWSTProzent, .ProvisionBrutto, .ProvisionNetto, .ProvisionSteuerfrei, .ProvisionSteuern {
+    fill: green;
+    stroke:  green;
+}
+.ReisepreisBrutto, .ReisepreisNetto, .ReisepreisSteuerfrei {
+    background-color: olive;
+    fill:olive;
+    stroke:  olive;
+}
+
+.NAME, .Ver-Kdnr {
+    fill: indigo;
+    stroke:  indigo;
+}
+
+.Rechnungsnr, .Reisedatum, .Reisender, .Ver-Kdnr {
+    fill: steelblue;
+    stroke:  steelblue;
+}
+.NONE {
+    fill: lightgray;
+    stroke:  lightgray;
+}
+
+</style>
+<script src="pace.min.js" data-pace-options='{ "ajax": {"trackMethods": ["GET", "POST"]}}'></script>
+<script src="d3.min.js"></script>
+</head>
+<body>
+<nav>
+    <div id="drop_zone" style="border-color: red;"><b id="filename">Drop ORC results here </b></div>
+    <div id="model_selection"><label for="models">Used Model:</label> <select id="models"></select></div>
+</nav>
+<div id="tooltip"></div>
+<div id="document"></div>
+<script type="text/javascript">
+
+const BASE_URL = "http://153.96.46.118:8080";
+const pageHeight = 3518;
+const pageWidth = 2480;
+
+let documentContent = null;
+
+function doRecognition() {
+    let modelFile = document.getElementById("models").value;
+    d3.select("#document").text('');
+    if (modelFile && documentContent) {
+        body = {
+            model: modelFile,
+            document: documentContent
+        };
+        d3.request(BASE_URL + "/recognize")
+        .header("Content-Type", "application/json")
+        .on("load",
+        function (rawData) {
+            const reader = d3.dsvFormat(" ");
+            const data = reader.parse(rawData.responseText);
+            draw(data);
+        }
+    ).on("error",
+    function (error) {
+        throw  error;
+    })
+    .on("progress", x => console.log(x))
+    .post(JSON.stringify(body));
+}
+}
+
+function updateModels() {
+    let options = d3.select("#models")
+    .selectAll("option")
+    .data(models);
+    options.enter().append("option")
+    .text(d => d);
+}
+
+
+function setInlineDocument(result, name) {
+    documentContent = result;
+    dropZone.style.borderColor = "darkgreen";
+    document.getElementById("filename").innerText = name;
+    doRecognition();
+}
+
+
+
+
+
+
+
+
+window.onload = function(){
+    document.body.addEventListener("mousemove", function(evt){
+        var tooltip = document.getElementById("tooltip");
+        if(evt.pageX+15+tooltip.clientWidth>window.innerWidth){
+            tooltip.style.left="";
+            tooltip.style.right=(window.innerWidth-(evt.pageX-15))+"px";
+        }
+        else{
+            tooltip.style.right="";
+            tooltip.style.left=evt.pageX+15+"px";
+        }
+        if(event.pageY+5+tooltip.clientHeight>window.innerHeight){
+            tooltip.style.top="";
+            tooltip.style.bottom=(window.innerHeight - (evt.pageY+5))+"px";
+        }
+        tooltip.style.top=(evt.pageY+5)+"px";
+        tooltip.style.bottom="";
+    });
+}
+
+function draw(data) {
+    let pagecount = 0;
+    let minpage = Number.MAX_VALUE;
+    function mouseout(){
+        document.getElementById("tooltip").style.display="none";
+    }
+    function mouseenter(element){
+        var tooltip = document.getElementById("tooltip");
+        if(element.label=="NONE"){
+            document.getElementById("tooltip").display="none";
+            return;
+        }
+        tooltip.innerHTML = element.label;
+        tooltip.style.display = "block";
+    }
+
+    function updatePageBounds(pageBounds, dat) {
+        minpage = Math.min(minpage, dat.page);
+        pagecount = Math.max(pagecount, dat.page);
+        let pagenumber = dat.page;
+        if (pageBounds[pagenumber] == null) {
+            pageBounds[pagenumber] = {
+                left:0,
+                top: pagenumber * (pageHeight),
+                bottom: pagenumber * (pageHeight) + pageHeight-10,
+                right:pageWidth
+                // left: dat.left,
+                // top: dat.top + dat.page * pageHeight,
+                // right: dat.right,
+                // bottom: dat.bottom + dat.page * pageHeight
+            };
+            return
+        }
+        pageBounds[pagenumber].left = Math.min(pageBounds[pagenumber].left, dat.left);
+        pageBounds[pagenumber].right = Math.max(pageBounds[pagenumber].right, dat.right);
+        pageBounds[pagenumber].top = Math.min(pageBounds[pagenumber].top, dat.top + pagenumber * pageHeight);
+        pageBounds[pagenumber].bottom = Math.max(pageBounds[pagenumber].bottom, dat.bottom + pagenumber * pageHeight);
+
+    }
+
+    let page;
+    let i;
+    //prepare Data
+    for (i = 0; i < data.length; i++) {
+        data[i].left = parseInt(data[i].left);
+        data[i].top = parseInt(data[i].top);
+        data[i].right = parseInt(data[i].right);
+        data[i].bottom = parseInt(data[i].bottom);
+        data[i].page = parseInt(data[i].page);
+    }
+
+    let minY = Number.MAX_VALUE;
+    let maxY = 0;
+    let maxX = 0;
+
+    let pageBounds = {};
+
+    for (i = 0; i < data.length; i++) {
+        let dat = data[i];
+
+        updatePageBounds(pageBounds, dat);
+
+        if ((dat.bottom) + dat.page * pageHeight > maxY)
+        // maxY = (dat.bottom) + dat.page * pageHeight;
+        if ((dat.top) + dat.page * pageHeight < minY)
+        minY = (dat.top) + dat.page * pageHeight;
+        if ((dat.right) > maxX)
+        maxX = (dat.right);
+    }
+
+    const red = "rgba(255,0,0,0.4)";
+    const green = "rgba(0,255,0,0.4)";
+
+    d3.select("#document")
+    .text('')
+    .append("svg")
+    .classed("unaligned", true)
+    .selectAll(".word")
+    .data(data)
+    .enter()
+    .append("rect")
+    .on("mouseenter", mouseenter)
+    .on("mouseleave", mouseout)
+    .attr('class', d => d.label.replace(/[^A-Za-zäöüÄÖÜ0-9_-]/g,""))
+    .attr("fill", function (d) {
+        if (d.label == "NONE")
+        return red;
+        return green;
+    })
+    .style("fill-opacity",
+        function(d){
+            if(d.probability){
+                return d.probability;
+            }
+            else{
+                return 1;
+            }
+        })
+    .classed("word", true);
+
+    d3.select(".unaligned").selectAll(".word")
+    // .text(function(d){return d.text})
+    // .attr("id", function(d){return JSON.stringify(d);})
+    .attr("y", function (d) {
+        return ((d.top) + (d.page) * pageHeight - minY);
+    })
+    .attr("x", function (d) {
+        return d.left
+    })
+    .attr("width", function (d) {
+        return (d.right - d.left)
+    })
+    .attr("height", function (d) {
+        return (d.bottom - d.top)
+    })
+    ;
+
+    d3.select(".unaligned").selectAll("text")
+    .data(data)
+    .enter().append("text")
+    .attr("fill", "black")
+    .attr("y", function (d) {
+        return ((d.bottom) + (d.page) * pageHeight - minY);
+    })
+    .attr("x", function (d) {
+        return d.left
+    })
+    .attr("textLength", function (d) {
+        return (d.right - d.left)
+    })
+    .attr("font-size", function (d) {
+        return (d.bottom - d.top)
+    })
+    .attr("tlengthAdjust", "spacingAndGlyphs")
+    .attr("title", d => d.label)
+    .style("pointer-events", "none")
+    .text(function (d) {
+        return d.text
+    });
+
+    d3.select(".unaligned")
+    .selectAll(".page")
+    .data(function () {
+        const pages = [];
+        for (page in pageBounds) {
+            pages.push(pageBounds[page]);
+        }
+        return pages;
+    })
+    .enter().append("rect")
+    .attr("x", function (d) {
+        return d.left
+    })
+    .attr("y", function (d) {
+        return d.top - minpage*pageHeight;
+    })
+    .attr("width", function (d) {
+        return d.right - d.left
+    })
+    .attr("height", function (d) {
+        return d.bottom - minpage*pageHeight;
+    })
+    .attr("stroke", "black")
+    .attr("stroke-width", "2")
+    .attr("fill", "none");
+
+    let h = pagecount*pageHeight; //maxY - minY;
+    let w = pageWidth;
+    d3.selectAll("svg")
+    .attr("viewBox","0 0 " + w + " " + (h))
+    .attr("preserveAspectRatio","xMinYMin meet");
+    d3.select("#document")
+    .style("padding-bottom", (100 * (h)/w) + "%")
+}
+
+
+
+
+
+
+
+
+function handleFileSelect(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    let files = evt.dataTransfer.files; // FileList object.
+    for (let i = 0, f; f = files[i]; i++) {
+        /*output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
+        f.size, ' bytes, last modified: ',
+        f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+        '</li>');
+        if (!f.type.match('image.*')) {
+        continue;
+    }*/
+    if (!f.name.toLowerCase().endsWith('json')) {
+        continue;
+    }
+    const name = f.name;
+    let reader = new FileReader();
+
+    // Closure to capture the file information.
+    reader.onload = (function (theFile) {
+        return function (e) {
+            // Render thumbnail.
+            let result;
+            try {
+                result = JSON.parse(e.target.result);
+            } catch (e) {
+                alert(name + " is not a valid json file")
+                return;
+            }
+            setInlineDocument(result, f.name);
+        };
+    })(f);
+
+    // Read in the image file as a data URL.
+    reader.readAsText(f);
+    return;
+}
+
+alert("Drop the ocr result (as JSON-file) here")
+}
+
+function handleDragOver(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+}
+
+// Setup the dnd listeners.
+let dropZone = document.getElementById('drop_zone');
+dropZone.addEventListener('dragover', handleDragOver, false);
+dropZone.addEventListener('drop', handleFileSelect, false);
+
+document.getElementById("models").addEventListener("change", () => doRecognition());
+
+d3.json(BASE_URL + "/models", data => {
+    models = data.models;
+    updateModels();
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+10,aftertax,2
+3,czip,12
+8,pzip,9
+15,traveller,5
+8,voucherdate,6
+8,pcity,10
+12,commission,3
+14,tripdate,4
+1,cname,11
+2,ccity,13
+9,pretax,8
+5,duedate,7
+8,bg,-1
