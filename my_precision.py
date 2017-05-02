@@ -7,6 +7,9 @@ json_dir = 'jsons3'
 itr = 0
 
 field_names = ['aftertax', 'commission', 'tripdate', 'traveller', 'voucherdate', 'duedate', 'pretax', 'pstreet', 'pzip', 'pcity', 'cname', 'cstreet', 'czip', 'currency', 'ccity', 'vatpercent']
+sh = open('reference_dict.txt', 'r')
+ref_dic = {int(x.split(',')[2].strip()):int(x.split(',')[0]) for x in sh}
+
 
 def word_match(reals, preds):
     tp = len([i for i in range(len(reals)) if reals[i] == preds[i]])
@@ -28,11 +31,11 @@ def try_json(j_path, coords, page, conf_thr):
     try:
         true_doc = json.load(open(j_path, 'r'))
     except:
-        return []
+        return None, None
     words = [x for x in true_doc['result'] if x['page'] == page+1][0]['words']
     #if json is faulty
-    if len(coords) == 0 or len(words) < 70:
-        return []
+    if len(coords) == 0:
+        return None, None
     result = [-1 for x in words]
     #precomputations
     for rec1 in coords:
@@ -58,9 +61,8 @@ def try_json(j_path, coords, page, conf_thr):
         if result[i] == -1 and min_dist_lab != None:
             result[i] = min_dist_lab
         '''
-    sh = open('reference_dict_15.txt', 'r')
-    ref_dic = {int(x.split(',')[2].strip()):int(x.split(',')[0]) for x in sh}
-    return [ref_dic[x] for x in result]
+    return j_path, [ref_dic[x] for x in result]
+
 
 
 big_dict = dict()
@@ -73,7 +75,22 @@ files_dic = dict((str(x),[z for z in pred if z['image_path'].find(str(x)) != -1]
 if len(big_dict) == 0:
     big_dict = dict((x,['' for x in range(len(field_names))]) for x in doc_lst)
     print(len(big_dict))
+f = open('filelist.txt', 'w')
+f_out = open('my_pred.json', 'w')
+big = []
+cnt = 0
 for document_numb in doc_lst:
+    doc_res = []
     for pr in files_dic[document_numb]:
         json_path = json_dir + '/' + document_numb + ".json"
-        print(try_json(json_path, pr['rects'],int(pr['image_path'].split('_')[2])-1, 0.1))
+        good_j, res = try_json(json_path, pr['rects'],int(pr['image_path'].split('_')[2])-1, 0.1)
+        if res != None:
+            doc_res += res
+    if doc_res != []:
+        print(document_numb)
+        f.write(document_numb + '\n')
+        big += [doc_res]
+        cnt += 1
+json.dump(big, f_out)
+print(cnt)
+

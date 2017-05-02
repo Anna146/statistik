@@ -1,0 +1,4 @@
+['BU-E-MAIL' 'BU-NAME-VERSAND' 'BU-ORT' 'BU-PLZ' 'BU-STRASSE' 'Fällig am'
+ 'MWSTProzent' 'NAME' 'NONE' 'ProvisionBrutto' 'ProvisionNetto'
+ 'ProvisionSteuerfrei' 'ProvisionSteuern' 'Rechnungsnr.' 'Reisedatum'
+ 'Reisender' 'ReisepreisBrutto' 'ReisepreisNetto' 'Ver-Kdnr']
